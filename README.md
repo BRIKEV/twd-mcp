@@ -4,15 +4,19 @@ MCP (Model Context Protocol) server for generating TWD tests from browser record
 
 ## Overview
 
-This MCP server enables AI assistants (Cursor, Claude Desktop) to generate TWD tests from browser recordings. It works in conjunction with browser MCPs (Playwright MCP, Chrome MCP) to capture user interactions and automatically generate test code.
+This MCP server enables AI assistants (Cursor, Claude Desktop) to generate TWD tests from browser recordings. It works in conjunction with **Playwright MCP** to capture user interactions and automatically generate test code.
 
 ## Architecture
 
 ```
-Browser MCP (captures) → AI (orchestrates) → TWD MCP (generates test code)
+Playwright MCP (captures) → AI (orchestrates) → TWD MCP (generates test code)
 ```
 
-TWD MCP focuses only on **data transformation**—browser capture is handled by existing MCPs.
+TWD MCP focuses only on **data transformation**—browser capture is handled by Playwright MCP. We focus on Playwright MCP because:
+- **Semantic alignment**: Playwright uses accessibility tree snapshots that map perfectly to TWD's `screenDom` (Testing Library) approach
+- **Structured data**: Playwright provides clean, structured interaction data ideal for code generation
+- **Cross-browser**: Works across Chromium, Firefox, and WebKit
+- **Test-focused**: Built specifically for automation and testing scenarios
 
 ## Tools
 
@@ -78,12 +82,23 @@ mcp-inspector npx twd-mcp
 
 This will open a web interface where you can test all three tools interactively.
 
-### Method 2: Test via Cursor/Claude Desktop
+### Method 2: Test via Cursor/Claude Desktop (Recommended for Real Testing)
 
-1. Add the MCP server to your Cursor settings (`~/.cursor/mcp.json` or similar):
+1. Add both Playwright MCP and TWD MCP to your Cursor settings.
+
+   **For Cursor**: Edit `~/.cursor/mcp.json` (create if it doesn't exist)
+   
+   **For Claude Desktop**: Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
+
+   You can reference `mcp.json.example` in this repo for the exact format. Add both servers:
+
 ```json
 {
   "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"]
+    },
     "twd-mcp": {
       "command": "npx",
       "args": ["twd-mcp"]
@@ -92,75 +107,17 @@ This will open a web interface where you can test all three tools interactively.
 }
 ```
 
+   **Note**: If you already have other MCP servers configured (like `chrome-devtools`), just add `playwright` and `twd-mcp` to the existing `mcpServers` object.
+
 2. Restart Cursor/Claude Desktop
 
-3. Test by asking:
-   - "Suggest selectors for a button element with text 'Submit'"
-   - "Generate mocks from these network requests: [paste JSON]"
-   - "Generate a test from these interactions: [paste JSON]"
-
-### Method 3: Manual Testing with JSON-RPC
-
-You can test the server directly using JSON-RPC over stdio:
-
-```bash
-# Test suggestSelectors
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"suggestSelectors","arguments":{"tagName":"button","textContent":"Submit"}}}' | npx twd-mcp
-
-# Test generateMocksFromNetwork
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"generateMocksFromNetwork","arguments":{"requests":[{"url":"https://api.example.com/users","method":"GET","response":{"status":200,"body":{"users":[]}}}]}}}' | npx twd-mcp
-
-# Test generateTestFromRecording
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"generateTestFromRecording","arguments":{"interactions":[{"type":"navigate","target":{"tagName":"div"},"url":"https://example.com"},{"type":"click","target":{"tagName":"button","textContent":"Login"}}],"testName":"Login flow"}}}' | npx twd-mcp
-```
-
-### Method 4: Unit Testing (Manual Verification)
-
-Create a test script to verify the tools work correctly:
-
-```bash
-# Create a test file
-cat > test-manual.js << 'EOF'
-import { suggestSelectors } from './dist/tools/suggestSelectors.js';
-import { generateMocksFromNetwork } from './dist/tools/generateMocksFromNetwork.js';
-import { generateTestFromRecording } from './dist/tools/generateTestFromRecording.js';
-
-// Test suggestSelectors
-console.log('Testing suggestSelectors:');
-const selectors = suggestSelectors({
-  tagName: 'button',
-  textContent: 'Submit Form',
-  ariaLabel: 'Submit the form'
-});
-console.log(JSON.stringify(selectors, null, 2));
-console.log('\n');
-
-// Test generateMocksFromNetwork
-console.log('Testing generateMocksFromNetwork:');
-const mocks = generateMocksFromNetwork([{
-  url: 'https://api.example.com/users',
-  method: 'GET',
-  response: { status: 200, body: { users: [] } }
-}]);
-console.log(mocks);
-console.log('\n');
-
-// Test generateTestFromRecording
-console.log('Testing generateTestFromRecording:');
-const test = generateTestFromRecording({
-  interactions: [
-    { type: 'navigate', target: { tagName: 'div' }, url: 'https://example.com' },
-    { type: 'click', target: { tagName: 'button', textContent: 'Login' } },
-    { type: 'type', target: { tagName: 'input', placeholder: 'Email' }, value: 'test@example.com' }
-  ],
-  testName: 'Login flow'
-});
-console.log(test);
-EOF
-
-# Run the test
-node test-manual.js
-```
+3. Test the integration by asking:
+   - "Use Playwright to navigate to example.com and click the login button, then generate a TWD test from that"
+   - "Record my browser session with Playwright and create a TWD test file"
+   - Or test individual tools:
+     - "Suggest selectors for a button element with text 'Submit'"
+     - "Generate mocks from these network requests: [paste JSON]"
+     - "Generate a test from these interactions: [paste JSON]"
 
 ## Development
 
@@ -174,14 +131,43 @@ npm run build
 
 ## Usage Example
 
-In Cursor, you can prompt:
-> "Record what I do in the browser and generate a TWD test"
+In Cursor (with both Playwright MCP and TWD MCP configured), you can prompt:
+
+> "Use Playwright to navigate to my app, record me clicking the login button and filling the form, then generate a TWD test from that session"
 
 The AI will:
-1. Call Playwright MCP / Chrome MCP to capture DOM + interactions
-2. Call TWD MCP `generateTestFromRecording` tool
-3. Output the generated test file
+1. Use Playwright MCP to:
+   - Navigate to the URL
+   - Capture DOM snapshots with accessibility tree data
+   - Record user interactions (clicks, typing, navigation)
+   - Capture network requests/responses
+2. Transform Playwright data to TWD MCP format
+3. Call TWD MCP `generateTestFromRecording` tool with the interactions and network calls
+4. Output a complete TWD test file ready to use
 
-## License
+### Example Generated Output
 
-ISC
+```typescript
+import { twd, userEvent, screenDom } from "twd-js";
+import { describe, it, beforeEach } from "twd-js/runner";
+
+describe("Login flow", () => {
+  beforeEach(() => {
+    twd.clearRequestMockRules();
+  });
+
+  it("should complete the recorded flow", async () => {
+    // Define mocks before interactions
+    twd.mockRequest("LoginRequest", {
+      method: "POST",
+      url: "/api/login",
+      response: { token: "abc123" },
+      status: 200
+    });
+
+    await userEvent.click(screenDom.getByRole('button', { name: /login/i }));
+    await userEvent.type(screenDom.getByLabelText(/email/i), 'user@example.com');
+    // ... more interactions
+  });
+});
+```
