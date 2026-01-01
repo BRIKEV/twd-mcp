@@ -1,21 +1,44 @@
 {
   "name": "twd-mcp",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "MCP server for generating TWD tests from browser recordings",
+  "main": "dist/index.js",
+  "bin": {
+    "twd-mcp": "./dist/index.js"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/BRIKEV/twd-mcp.git"
   },
-  "keywords": [],
+  "keywords": [
+    "mcp",
+    "twd",
+    "testing",
+    "test-generation",
+    "model-context-protocol"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/BRIKEV/twd-mcp/issues"
   },
-  "homepage": "https://github.com/BRIKEV/twd-mcp#readme"
+  "homepage": "https://github.com/BRIKEV/twd-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
