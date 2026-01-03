@@ -1,8 +1,14 @@
 {
   "name": "twd-mcp",
   "version": "1.0.0",
-  "description": "MCP server for generating TWD tests from browser recordings",
+  "description": "MCP server for generating TWD tests from browser automation data",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "bin": {
     "twd-mcp": "./dist/index.js"
   },

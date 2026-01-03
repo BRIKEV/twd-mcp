@@ -6,7 +6,7 @@
     },
     "twd-mcp": {
       "command": "npx",
-      "args": ["twd-mcp"]
+      "args": ["twd-mcp@1.0.0"]
     }
   }
 }
