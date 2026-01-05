@@ -6,6 +6,8 @@ MCP (Model Context Protocol) server for generating TWD tests from browser automa
 
 This MCP server enables AI assistants (Cursor, Claude Desktop) to generate TWD tests from browser automation sessions. It works in conjunction with **Playwright MCP** to execute browser actions programmatically and automatically generate test code.
 
+> 📖 **Full Documentation**: For complete documentation, see the [TWD MCP Integration Guide](https://brikev.github.io/twd/mcp-integration) in the TWD documentation.
+
 ## Architecture
 
 ```
@@ -48,6 +50,8 @@ Generates a complete TWD test file from browser recording data.
 **Output:** Complete TWD test file code
 
 ## Installation
+
+The TWD MCP server is designed to be used via `npx`, so no installation is required. However, if you want to develop or contribute to the project:
 
 ```bash
 npm install
@@ -179,3 +183,11 @@ describe("Login flow", () => {
   });
 });
 ```
+
+## Resources
+
+- 📖 [Full Documentation](https://brikev.github.io/twd/mcp-integration) - Complete guide in TWD docs
+- 📦 [View on npm](https://www.npmjs.com/package/twd-mcp)
+- 🐛 [Report bugs](https://github.com/BRIKEV/twd-mcp/issues)
+- 💬 [Join discussions](https://github.com/BRIKEV/twd-mcp/discussions)
+- ⭐ [Star on GitHub](https://github.com/BRIKEV/twd-mcp)
